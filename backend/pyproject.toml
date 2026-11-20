@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "studylm-backend"
+version = "0.1.0"
+description = "StudyLM: Multimodal, citation-grounded knowledge assistant backend"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "StudyLM Engineering Team" }
+]
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "sqlmodel>=0.0.16",
+    "sqlalchemy>=2.0.28",
+    "psycopg[binary]>=3.1.18",
+    "aiosqlite>=0.20.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "google-auth>=2.28.0",
+    "procrastinate>=2.1.0",
+    "qdrant-client>=1.8.0",
+    "boto3>=1.34.0",
+    "botocore>=1.34.0",
+    "pymupdf>=1.24.0",
+    "pysbd>=0.3.4",
+    "youtube-transcript-api>=0.6.2",
+    "flashrank>=0.2.4",
+    "google-genai>=0.1.1",
+    "numpy>=1.26.0",
+    "httpx>=0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.5",
+    "pytest-mock>=3.12.0",
+    "alembic>=1.13.1",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+markers = [
+    "live: live external integration tests against real services (Neon, Qdrant, Gemini, S3)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+    "ignore::sqlalchemy.exc.SAWarning",
+]

@@ -1,0 +1,64 @@
+# Hardened Caddy Reverse Proxy Configuration for StudyLM Production
+{
+    admin off
+    auto_https off
+}
+
+:80 {
+    # 1. Reverse Proxy SSE Streaming & API Endpoints to FastAPI Backend
+    handle_path /api/* {
+        reverse_proxy backend:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+
+            # HTTP 206 Partial Content Range Streaming support
+            header_up Range {header.Range}
+            header_down Accept-Ranges "bytes"
+
+            # Unbuffered SSE Streaming configuration
+            header_down X-Accel-Buffering "no"
+            header_down Cache-Control "no-cache"
+        }
+    }
+
+    # 2. HTTP 206 Partial Content Range Streaming for direct /sources/* access
+    handle /sources/* {
+        reverse_proxy backend:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up Range {header.Range}
+
+            # Enable partial range response pass-through
+            header_down Accept-Ranges "bytes"
+        }
+    }
+
+    # 3. Next.js Frontend Standalone Server
+    handle {
+        reverse_proxy frontend:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    # 4. Strict Security & Content-Security-Policy Headers
+    header {
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com; frame-src https://www.youtube.com; img-src 'self' data: https: blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' https: wss:; font-src 'self' data:;"
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    }
+
+    # 5. Gzip / Zstd Compression (excluding real SSE and PDF streams)
+    encode zstd gzip {
+        match {
+            not path /api/notebooks/*/query/stream*
+            not path /notebooks/*/query/stream*
+            not path /api/sources/*/stream*
+            not path /sources/*/stream*
+        }
+    }
+}

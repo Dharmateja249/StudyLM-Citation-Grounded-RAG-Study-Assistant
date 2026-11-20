@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: studylm-postgres
+    environment:
+      POSTGRES_USER: studylm_user
+      POSTGRES_PASSWORD: studylm_secure_password
+      POSTGRES_DB: studylm_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studylm_user -d studylm_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.1
+    container_name: studylm-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: studylm-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://studylm_user:studylm_secure_password@postgres:5432/studylm_db
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-for-development-32chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: studylm-worker
+    command: ["procrastinate", "--app=app.tasks.worker.app", "worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://studylm_user:studylm_secure_password@postgres:5432/studylm_db
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: studylm-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "3000:3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: studylm-caddy
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+
+volumes:
+  pgdata:
+  qdrant_data:
