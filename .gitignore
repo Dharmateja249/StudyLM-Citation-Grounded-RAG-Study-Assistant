@@ -174,7 +174,7 @@ $RECYCLE.BIN/
 .history/
 
 # -----------------------------------------------------------------------------
-# Agent & Temporary Scratch / Debug Scripts
+# Agent & Temporary Scratch / Debug Scripts & Legacy Planning Docs
 # -----------------------------------------------------------------------------
 debug_*.py
 backend/debug_*.py
@@ -185,3 +185,12 @@ scratch/
 .gemini/
 .claude/
 .cursor/
+FRONTEND_TEST_STRATEGY.md
+ORIGINAL_REQUEST.md
+PHASE_ARCHITECTURE_PLAN.md
+PROJECT.md
+QUICKSTART.md
+TEST_INFRA.md
+TEST_READY.md
+TEST_REPORT.md
+*.pdf
